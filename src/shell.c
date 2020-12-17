@@ -13,6 +13,7 @@ void shell_exec_cmd(char* cmd) {
 
     pid_t cproc = fork();
     if(cproc == 0) {
+        setsid();
         char* exec[] = { shell, "-c", cmd, NULL };
 
         int status = execvp(exec[0], exec);

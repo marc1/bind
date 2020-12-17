@@ -4,14 +4,28 @@
 #include "shell.c"
 #include "event_tap.c"
 
+typedef const char* mod;
+
+typedef struct bind {
+    CGEventFlags flags;
+    CGKeyCode key;
+    char* cmd;
+} bind;
+
+static size_t len = 0;
+static bind binds[5];
+
 EVENT_TAP_CALLBACK(test) {
     if(type == kCGEventKeyDown || type == kCGEventFlagsChanged) {
         CGEventFlags flags = CGEventGetFlags(event);
         CGKeyCode kc = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
         bool repeat = CGEventGetIntegerValueField(event, kCGKeyboardEventAutorepeat);
 
-        if(kc == kVK_ANSI_A) {
-            shell_exec_cmd("echo Hello world");
+        for(int i = 0; i < len; ++i) {
+            bind* b = &binds[i];
+            if(b->key == kc && flags & b->flags) {
+                shell_exec_cmd(b->cmd); 
+            }
         }
     }
 
@@ -19,10 +33,14 @@ EVENT_TAP_CALLBACK(test) {
 }
 
 int main(int argc, char* argv[]) {
-    event_tap tap;
-    tap.mask = (1 << kCGEventKeyDown) | (1 << kCGEventFlagsChanged);
+    bind b0 = { kCGEventFlagMaskControl, kVK_F12, "echo HELLO WORLD" };
+    binds[0] = b0;
+    len++;
 
     shell_init();
+
+    event_tap tap;
+    tap.mask = (1 << kCGEventKeyDown) | (1 << kCGEventFlagsChanged);
     event_tap_init(&tap, test);
 
     CFRunLoopRun();
